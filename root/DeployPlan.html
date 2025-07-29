@@ -176,7 +176,9 @@ jobs:
         alert("Error uploading file: " + error.message);
     }
 }
-        
+   function toBase64(str) {
+    return btoa(unescape(encodeURIComponent(str)));
+}     
     </script>
 </body>
 </html>
