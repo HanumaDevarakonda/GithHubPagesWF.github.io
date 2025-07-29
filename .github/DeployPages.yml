@@ -6,9 +6,10 @@ on:
       - main
     paths:
       - "*.html"
+      - "script/*.ps1"   # Trigger when PowerShell scripts in script/ change
 
 jobs:
-  deploy:
+  deploy-html:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,4 +26,20 @@ jobs:
 
       - name: Deploy to GitHub Pages
         id: deployment
+        uses: actions/deploy-pages@v4
+
+  deploy-ps1:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Upload PS1 files
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./script/*.ps1
+
+      - name: Deploy PS1 files to GitHub Pages
+        id: deployment_ps1
         uses: actions/deploy-pages@v4
