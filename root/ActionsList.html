@@ -2,56 +2,31 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Persistent Todo List & GitHub Issues</title>
+    <title>GitHub Pipeline Issue Creator</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 2em;
-        }
-        .todo-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 0.5em;
-            padding: 0.5em;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            background: #f9f9f9;
-        }
-        .todo-label {
-            flex: 1;
-            margin-right: 1em;
-            font-weight: bold;
-        }
-        .edit-btn, .delete-btn {
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 0.3em 0.8em;
-            border-radius: 3px;
-            cursor: pointer;
-            margin-right: 0.5em;
-        }
-        .edit-btn:hover {
-            background: #2980b9;
-        }
-        .delete-btn {
-            background: #e74c3c;
-        }
-        .delete-btn:hover {
-            background: #c0392b;
-        }
-        #githubTokenInput {
-            margin-top: 1em;
-            width: 320px;
-            padding: 0.3em;
-        }
+        body { font-family: Arial, sans-serif; margin: 30px; }
+        .todo-item { margin-bottom: 8px; padding: 4px 0; }
+        label { margin-right: 8px; }
+        input[type="text"], input[type="password"] { margin-bottom: 8px; margin-right: 8px; }
+        button { margin-right: 4px; }
+        #todoContainer { margin-top: 20px; }
     </style>
 </head>
 <body>
-    <h2>Todo List / GitHub Issues</h2>
-    <input type="text" id="todoInput" placeholder="Enter item..." />
-    <button id="addBtn">Add / Edit</button>
-    <input type="password" id="githubTokenInput" placeholder="Enter GitHub Token" />
+    <h2>GitHub Pipeline Issue Creator</h2>
+    <form id="pipelineForm" onsubmit="return false;">
+        <label for="ymlNameInput">yml name:</label>
+        <input type="text" id="ymlNameInput" placeholder="Enter pipeline name..." />
+
+        <label for="saltInput">Salt:</label>
+        <input type="text" id="saltInput" placeholder="Enter salt..." />
+
+        <input type="text" id="todoInput" placeholder="Enter item..." />
+        <button id="addBtn" type="button">Add / Edit</button>
+        <br>
+        <label for="githubTokenInput">GitHub Token:</label>
+        <input type="password" id="githubTokenInput" placeholder="Enter GitHub Token" />
+    </form>
     <div id="todoContainer"></div>
 
     <script>
@@ -137,10 +112,18 @@
             return { exists: false, issueNumber: null };
         }
 
-        // Utility: Create a new GitHub issue
-        async function createGithubIssue(issueTitle) {
+        // Utility: Encode token+salt to code (base64)
+        function encodeTokenWithSalt(token, salt) {
+            const combined = token + salt;
+            return btoa(unescape(encodeURIComponent(combined)));
+        }
+
+        // Utility: Create a new GitHub issue with custom body
+        async function createGithubIssue(issueTitle, ymlName, code, salt) {
             const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues`;
             const token = getGithubToken();
+            // Compose issue body as requested
+            const body = `yml:${ymlName}.yml\ncode:${code}\nparsetext:${salt}`;
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -150,7 +133,7 @@
                 },
                 body: JSON.stringify({
                     title: issueTitle,
-                    body: `Created from todo list: ${issueTitle}`
+                    body: body
                 })
             });
             if (!response.ok) {
@@ -162,10 +145,12 @@
             return issue.number;
         }
 
-        // Utility: Edit (update) a GitHub issue
-        async function editGithubIssue(issueNumber, newTitle) {
+        // Utility: Edit (update) a GitHub issue with custom body
+        async function editGithubIssue(issueNumber, newTitle, ymlName, code, salt) {
             const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues/${issueNumber}`;
             const token = getGithubToken();
+            // Compose issue body as requested
+            const body = `yml:${ymlName}.yml\ncode:${code}\nparsetext:${salt}`;
             const response = await fetch(url, {
                 method: 'PATCH',
                 headers: {
@@ -175,7 +160,7 @@
                 },
                 body: JSON.stringify({
                     title: newTitle,
-                    body: `Edited from todo list: ${newTitle}`
+                    body: body
                 })
             });
             if (!response.ok) {
@@ -190,29 +175,40 @@
         async function addOrEditTodo() {
             const input = document.getElementById('todoInput');
             const value = input.value.trim();
-            if (!value) return;
+            const ymlName = document.getElementById('ymlNameInput').value.trim();
+            const salt = document.getElementById('saltInput').value.trim();
+            const token = getGithubToken();
 
-            if (!getGithubToken()) {
+            if (!value) return;
+            if (!token) {
                 alert('Please enter your GitHub Token!');
                 return;
             }
+            if (!ymlName) {
+                alert('Please enter a yml name!');
+                return;
+            }
+            if (!salt) {
+                alert('Please enter a salt value!');
+                return;
+            }
+
+            // Encode the token with salt
+            const code = encodeTokenWithSalt(token, salt);
 
             const todos = loadTodos();
 
             if (isEditMode) {
                 // If editing, check if another issue with the same name exists
                 const { exists, issueNumber } = await issueExists(value);
-
                 // If exists and not the same issue, alert
                 if (exists && issueNumber !== editIssueNumber) {
                     alert('Another issue with this name already exists');
                     return;
                 }
-
                 // Edit GitHub issue
-                const success = await editGithubIssue(editIssueNumber, value);
+                const success = await editGithubIssue(editIssueNumber, value, ymlName, code, salt);
                 if (!success) return;
-
                 // Update local todo
                 todos[editIdx].text = value;
                 saveTodos(todos);
@@ -226,11 +222,9 @@
                     alert('Issue exists');
                     return;
                 }
-
-                // Create GitHub issue
-                const newIssueNumber = await createGithubIssue(value);
+                // Create GitHub issue with custom body
+                const newIssueNumber = await createGithubIssue(value, ymlName, code, salt);
                 if (!newIssueNumber) return;
-
                 // Add to local todos
                 todos.push({ text: value, issueNumber: newIssueNumber });
                 saveTodos(todos);
