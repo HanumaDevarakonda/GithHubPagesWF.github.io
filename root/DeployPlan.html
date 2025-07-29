@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -29,64 +28,118 @@
     </style>
 </head>
 <body>
-    <label for="actionDropdown">Select Action</label>
+    <label for="actionDropdown">Select Issue</label>
     <select id="actionDropdown">
-        <option value="Review">Review</option>
-        <option value="Edit">Edit</option>
-        <option value="Delete">Delete</option>
-        <option value="Archive">Archive</option>
+        <option value="">Loading issues...</option>
     </select>
 
     <label id="lblActions"></label>
 
     <button type="button" onclick="addAction()">Add Action</button>
-    
+
+    <div>
+        <label for="scheduleDatetime">Schedule DateTime</label>
+        <input type="datetime-local" id="scheduleDatetime">
+    </div>
+
     <div class="action-buttons">
         <button type="button" onclick="approve()">Approve</button>
         <button type="button" onclick="reject()">Reject</button>
     </div>
 
     <script>
+        // Populate issues from GitHub API
+        async function fetchIssues() {
+            const owner = 'HanumaDevarakonda';
+            const repo = 'GithHubPagesWF.github.io';
+            const dropdown = document.getElementById("actionDropdown");
+            dropdown.innerHTML = `<option value="">Loading...</option>`;
+            try {
+                const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}/issues`);
+                if (!resp.ok) throw new Error('Unable to fetch issues');
+                const issues = await resp.json();
+                dropdown.innerHTML = '';
+                issues.forEach(issue => {
+                    const opt = document.createElement('option');
+                    opt.value = issue.title;
+                    opt.textContent = issue.title;
+                    dropdown.appendChild(opt);
+                });
+                if (dropdown.options.length === 0) {
+                    dropdown.innerHTML = `<option value="">No issues found</option>`;
+                }
+            } catch (err) {
+                dropdown.innerHTML = `<option value="">Error loading issues</option>`;
+            }
+        }
+        fetchIssues();
+
         function addAction() {
             var dropdown = document.getElementById("actionDropdown");
             var action = dropdown.value;
             var lblActions = document.getElementById("lblActions");
-            if (lblActions.innerText.length === 0) {
-                lblActions.innerText = action;
-            } else {
-                lblActions.innerText += "\n" + action;
+            if (action) {
+                if (lblActions.innerText.length === 0) {
+                    lblActions.innerText = action;
+                } else {
+                    lblActions.innerText += "\n" + action;
+                }
             }
         }
 
-        function approve() {
-            // These must be replaced with actual values!
-            const owner = 'HanumaDevarakonda'; 
-            const repo = 'GitHubPages';
-            const workflow_id = 'blank.yml'; // Can use file name if unique
-            const token = prompt("Enter the value") // Must be a real token!
-            const ref = 'main'; // Branch to run workflow from
+        function datetimeToCron(dt) {
+            // dt format: YYYY-MM-DDTHH:MM (local browser time)
+            const date = new Date(dt);
+            if (isNaN(date)) return null;
+            const min = date.getMinutes();
+            const hour = date.getHours();
+            const day = date.getDate();
+            const month = date.getMonth() + 1;
+            // Cron format: min hour day month weekday
+            return `${min} ${hour} ${day} ${month} *`;
+        }
 
-            fetch(`https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflow_id}/dispatches`, {
-                method: "POST",
-                headers: {
-                    "Accept": "application/vnd.github+json",
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ ref })
-            })
-            .then(response => {
-                if (response.ok) {
-                    alert("Workflow triggered successfully!");
-                } else {
-                    response.json().then(data => {
-                        alert("Failed to trigger workflow: " + (data.message || response.statusText));
-                    });
-                }
-            })
-            .catch(error => {
-                alert("Error: " + error);
-            });
+        function approve() {
+            const selectedIssue = document.getElementById('actionDropdown').value;
+            const dtVal = document.getElementById('scheduleDatetime').value;
+            const cronExpr = datetimeToCron(dtVal);
+            if (!selectedIssue || !cronExpr) {
+                alert('Please select an issue and a valid date/time.');
+                return;
+            }
+
+            // Generate YAML content for scheduled workflow
+            const ymlContent =
+`name: Scheduled Deploy
+
+on:
+  schedule:
+    - cron: '${cronExpr}'
+
+jobs:
+  deploy:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run Deploy Script
+        shell: pwsh
+        run: |
+          ./deploy.ps1 -IssueTitle "${selectedIssue}"
+`;
+
+            // Download the YAML file
+            const blob = new Blob([ymlContent], {type: "text/yaml"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'scheduled_deploy.yml';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            alert("YAML file created and downloaded. Please add it to your .github/workflows folder in your repository.");
         }
 
         function reject() {
