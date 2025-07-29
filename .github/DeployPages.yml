@@ -18,8 +18,8 @@ jobs:
 
       - name: Copy static HTML files
         run: |
-          mkdir -p ./public
-          cp -r ./root/* ./public/
+          mkdir -p public
+          cp -r root/* public/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
