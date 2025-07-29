@@ -125,7 +125,7 @@ jobs:
       - name: Run Deploy Script
         shell: pwsh
         run: |
-          ./deploy.ps1 -IssueTitle "${selectedIssue}"
+          ./deploy.ps1 -RepoName "${selectedIssue}"
 `;
 
             // Download the YAML file
