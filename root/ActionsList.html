@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Persistent Todo List</title>
+    <title>Persistent Todo List & GitHub Issues</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -22,26 +22,52 @@
             margin-right: 1em;
             font-weight: bold;
         }
-        .delete-btn {
-            background: #e74c3c;
+        .edit-btn, .delete-btn {
+            background: #3498db;
             color: white;
             border: none;
             padding: 0.3em 0.8em;
             border-radius: 3px;
             cursor: pointer;
+            margin-right: 0.5em;
+        }
+        .edit-btn:hover {
+            background: #2980b9;
+        }
+        .delete-btn {
+            background: #e74c3c;
         }
         .delete-btn:hover {
             background: #c0392b;
         }
+        #githubTokenInput {
+            margin-top: 1em;
+            width: 320px;
+            padding: 0.3em;
+        }
     </style>
 </head>
 <body>
-    <h2>Todo List</h2>
+    <h2>Todo List / GitHub Issues</h2>
     <input type="text" id="todoInput" placeholder="Enter item..." />
-    <button id="addBtn">Add</button>
+    <button id="addBtn">Add / Edit</button>
+    <input type="password" id="githubTokenInput" placeholder="Enter GitHub Token" />
     <div id="todoContainer"></div>
 
     <script>
+        // ======= CONFIGURATION =======
+        const GITHUB_OWNER = 'HanumaDevarakonda';
+        const GITHUB_REPO = 'GithHubPagesWF.github.io';
+
+        // State for editing
+        let isEditMode = false;
+        let editIdx = null;
+        let editIssueNumber = null;
+
+        function getGithubToken() {
+            return document.getElementById('githubTokenInput').value.trim();
+        }
+
         // Utility: Load todos from localStorage
         function loadTodos() {
             const todos = localStorage.getItem('todos');
@@ -58,52 +84,214 @@
             const todos = loadTodos();
             const container = document.getElementById('todoContainer');
             container.innerHTML = '';
-            todos.forEach((todo, idx) => {
+            todos.forEach((todoObj, idx) => {
                 const div = document.createElement('div');
                 div.className = 'todo-item';
                 div.setAttribute('data-idx', idx);
 
                 const label = document.createElement('label');
                 label.className = 'todo-label';
-                label.textContent = todo;
+                label.textContent = todoObj.text;
+
+                const editBtn = document.createElement('button');
+                editBtn.className = 'edit-btn';
+                editBtn.textContent = 'Edit';
+                editBtn.onclick = function() {
+                    startEditTodo(idx, todoObj);
+                };
 
                 const delBtn = document.createElement('button');
                 delBtn.className = 'delete-btn';
                 delBtn.textContent = 'Delete';
                 delBtn.onclick = function() {
-                    deleteTodo(idx);
+                    deleteTodo(idx, todoObj.issueNumber);
                 };
 
                 div.appendChild(label);
+                div.appendChild(editBtn);
                 div.appendChild(delBtn);
                 container.appendChild(div);
             });
         }
 
-        // Add new todo
-        function addTodo() {
+        // Utility: Check if issue exists, returns {exists, issueNumber}
+        async function issueExists(issueTitle) {
+            const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues?state=all&per_page=100`;
+            const token = getGithubToken();
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github+json'
+                }
+            });
+            if (!response.ok) {
+                alert('Failed to check issues!');
+                return { exists: false, issueNumber: null };
+            }
+            const issues = await response.json();
+            for (const issue of issues) {
+                if (issue.title.trim().toLowerCase() === issueTitle.trim().toLowerCase()) {
+                    return { exists: true, issueNumber: issue.number };
+                }
+            }
+            return { exists: false, issueNumber: null };
+        }
+
+        // Utility: Create a new GitHub issue
+        async function createGithubIssue(issueTitle) {
+            const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues`;
+            const token = getGithubToken();
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    title: issueTitle,
+                    body: `Created from todo list: ${issueTitle}`
+                })
+            });
+            if (!response.ok) {
+                alert('Failed to create issue!');
+                return null;
+            }
+            const issue = await response.json();
+            alert('GitHub Issue created: #' + issue.number);
+            return issue.number;
+        }
+
+        // Utility: Edit (update) a GitHub issue
+        async function editGithubIssue(issueNumber, newTitle) {
+            const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues/${issueNumber}`;
+            const token = getGithubToken();
+            const response = await fetch(url, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    title: newTitle,
+                    body: `Edited from todo list: ${newTitle}`
+                })
+            });
+            if (!response.ok) {
+                alert('Failed to edit issue!');
+                return false;
+            }
+            alert('GitHub Issue updated: #' + issueNumber);
+            return true;
+        }
+
+        // Add or Edit todo (with GitHub issue check/create/edit)
+        async function addOrEditTodo() {
             const input = document.getElementById('todoInput');
             const value = input.value.trim();
             if (!value) return;
+
+            if (!getGithubToken()) {
+                alert('Please enter your GitHub Token!');
+                return;
+            }
+
             const todos = loadTodos();
-            todos.push(value);
-            saveTodos(todos);
-            input.value = '';
-            renderTodos();
+
+            if (isEditMode) {
+                // If editing, check if another issue with the same name exists
+                const { exists, issueNumber } = await issueExists(value);
+
+                // If exists and not the same issue, alert
+                if (exists && issueNumber !== editIssueNumber) {
+                    alert('Another issue with this name already exists');
+                    return;
+                }
+
+                // Edit GitHub issue
+                const success = await editGithubIssue(editIssueNumber, value);
+                if (!success) return;
+
+                // Update local todo
+                todos[editIdx].text = value;
+                saveTodos(todos);
+                resetEdit();
+                renderTodos();
+                input.value = '';
+            } else {
+                // Not editing, check if issue exists
+                const { exists, issueNumber } = await issueExists(value);
+                if (exists) {
+                    alert('Issue exists');
+                    return;
+                }
+
+                // Create GitHub issue
+                const newIssueNumber = await createGithubIssue(value);
+                if (!newIssueNumber) return;
+
+                // Add to local todos
+                todos.push({ text: value, issueNumber: newIssueNumber });
+                saveTodos(todos);
+                input.value = '';
+                renderTodos();
+            }
         }
 
-        // Delete todo by index
-        function deleteTodo(idx) {
+        // Start editing a todo
+        function startEditTodo(idx, todoObj) {
+            isEditMode = true;
+            editIdx = idx;
+            editIssueNumber = todoObj.issueNumber;
+            document.getElementById('todoInput').value = todoObj.text;
+            document.getElementById('addBtn').textContent = 'Save';
+        }
+
+        // Reset edit mode
+        function resetEdit() {
+            isEditMode = false;
+            editIdx = null;
+            editIssueNumber = null;
+            document.getElementById('addBtn').textContent = 'Add / Edit';
+        }
+
+        // Delete todo and GitHub issue
+        async function deleteTodo(idx, issueNumber) {
+            if (!getGithubToken()) {
+                alert('Please enter your GitHub Token!');
+                return;
+            }
+            const confirmDelete = confirm('Delete this todo and its GitHub issue?');
+            if (!confirmDelete) return;
+
+            // Close GitHub issue
+            if (issueNumber) {
+                const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues/${issueNumber}`;
+                const token = getGithubToken();
+                await fetch(url, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/vnd.github+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ state: 'closed' })
+                });
+            }
+
+            // Remove from local todos
             const todos = loadTodos();
             todos.splice(idx, 1);
             saveTodos(todos);
+            resetEdit();
             renderTodos();
         }
 
         // Event listeners
-        document.getElementById('addBtn').addEventListener('click', addTodo);
+        document.getElementById('addBtn').addEventListener('click', addOrEditTodo);
         document.getElementById('todoInput').addEventListener('keyup', function(e) {
-            if (e.key === 'Enter') addTodo();
+            if (e.key === 'Enter') addOrEditTodo();
         });
 
         // Render on load
