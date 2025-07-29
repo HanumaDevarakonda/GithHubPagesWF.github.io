@@ -1,0 +1,97 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Action Selector</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+        }
+        label, select, button, #lblActions {
+            display: block;
+            margin: 10px 0;
+        }
+        #lblActions {
+            min-height: 40px;
+            border: 1px solid #ccc;
+            padding: 8px;
+            background: #f9f9f9;
+            white-space: pre-line;
+        }
+        .action-buttons {
+            margin-top: 20px;
+        }
+        .action-buttons button {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <label for="actionDropdown">Select Action</label>
+    <select id="actionDropdown">
+        <option value="Review">Review</option>
+        <option value="Edit">Edit</option>
+        <option value="Delete">Delete</option>
+        <option value="Archive">Archive</option>
+    </select>
+
+    <label id="lblActions"></label>
+
+    <button type="button" onclick="addAction()">Add Action</button>
+    
+    <div class="action-buttons">
+        <button type="button" onclick="approve()">Approve</button>
+        <button type="button" onclick="reject()">Reject</button>
+    </div>
+
+    <script>
+        function addAction() {
+            var dropdown = document.getElementById("actionDropdown");
+            var action = dropdown.value;
+            var lblActions = document.getElementById("lblActions");
+            if (lblActions.innerText.length === 0) {
+                lblActions.innerText = action;
+            } else {
+                lblActions.innerText += "\n" + action;
+            }
+        }
+
+        function approve() {
+            // These must be replaced with actual values!
+            const owner = 'HanumaDevarakonda'; 
+            const repo = 'GitHubPages';
+            const workflow_id = 'TestAction.yml'; // Can use file name if unique
+            const token = prompt("Enter the value") // Must be a real token!
+            const ref = 'main'; // Branch to run workflow from
+
+            fetch(`https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflow_id}/dispatches`, {
+                method: "POST",
+                headers: {
+                    "Accept": "application/vnd.github+json",
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ ref })
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert("Workflow triggered successfully!");
+                } else {
+                    response.json().then(data => {
+                        alert("Failed to trigger workflow: " + (data.message || response.statusText));
+                    });
+                }
+            })
+            .catch(error => {
+                alert("Error: " + error);
+            });
+        }
+
+        function reject() {
+            alert("Rejected!");
+        }
+    </script>
+</body>
+</html>
