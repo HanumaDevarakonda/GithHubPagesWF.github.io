@@ -87,7 +87,7 @@
             }
         }
 
-    function centralToUTC(dt) {
+    function datetimeToCron(dt) {
     // dt format: YYYY-MM-DDTHH:MM (Central Time)
     const date = new Date(dt);
     if (isNaN(date)) return null;
@@ -121,7 +121,7 @@
     }
 
     // Convert Central time to UTC by subtracting the offset
-    const utcDate = new Date(date.getTime() - utcOffset * 60 * 60 * 1000);
+    const utcDate = new Date(date.getTime() + utcOffset * 60 * 60 * 1000);
 
     // Build cron expression from UTC
     const min = utcDate.getUTCMinutes();
