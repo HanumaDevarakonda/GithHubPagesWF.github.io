@@ -126,11 +126,22 @@
     console.log("UTC Date Time:",utcDate)
         
     // Build cron expression from UTC
-    const min = utcDate.getUTCMinutes();
-    const hour = utcDate.getUTCHours();
-    const day = utcDate.getUTCDate();
-    const month = utcDate.getUTCMonth() + 1;
-    return `${min} ${hour} ${day} ${month} *`;
+     //const min = utcDate.getUTCMinutes();
+     //const hour = utcDate.getUTCHours();
+     //const day = utcDate.getUTCDate();
+     //const month = utcDate.getUTCMonth() + 1;
+     //return `${min} ${hour} ${day} ${month} *`;
+
+    const minute = utcDate.getMinutes();
+      const hour = utcDate.getHours();
+      const dayOfMonth = utcDate.getDate();
+      // Note: JavaScript months are 0-indexed, but cron months are 1-indexed
+      const month = utcDate.getMonth() + 1;
+      // Cron day of week: 0 (Sunday) to 6 (Saturday)
+      const dayOfWeek = utcDate.getDay();
+      // Return cron expression (minute hour dayOfMonth month dayOfWeek)
+      return `${minute} ${hour} ${dayOfMonth} ${month} ${dayOfWeek}`;
+        
 }
 
         function approve() {
