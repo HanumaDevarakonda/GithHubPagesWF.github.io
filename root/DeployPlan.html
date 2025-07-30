@@ -87,17 +87,49 @@
             }
         }
 
-        function datetimeToCron(dt) {
-            // dt format: YYYY-MM-DDTHH:MM (local browser time)
-            const date = new Date(dt);
-            if (isNaN(date)) return null;
-            const min = date.getMinutes();
-            const hour = date.getHours();
-            const day = date.getDate();
-            const month = date.getMonth() + 1;
-            // Cron format: min hour day month weekday
-            return `${min} ${hour} ${day} ${month} *`;
+    function datetimeToCron(dt) {
+    // dt format: YYYY-MM-DDTHH:MM (Central Time)
+    const date = new Date(dt);
+    if (isNaN(date)) return null;
+
+    // Determine if date is CDT (UTC-5) or CST (UTC-6)
+    const year = date.getFullYear();
+
+    // Helper: Find nth weekday in a month
+    function nthWeekday(year, month, weekday, n) {
+        let count = 0;
+        for (let i = 1; i <= 31; i++) {
+            const d = new Date(year, month - 1, i);
+            if (d.getMonth() !== month - 1) break;
+            if (d.getDay() === weekday) {
+                count++;
+                if (count === n) return i;
+            }
         }
+        return null;
+    }
+    // DST starts second Sunday in March, ends first Sunday in November
+    const dstStart = new Date(year, 2, nthWeekday(year, 3, 0, 2), 2, 0, 0);  // 2 AM local
+    const dstEnd = new Date(year, 10, nthWeekday(year, 11, 0, 1), 2, 0, 0);   // 2 AM local
+
+    // Compare date to DST period
+    let utcOffset;
+    if (date >= dstStart && date < dstEnd) {
+        utcOffset = 5; // CDT
+    } else {
+        utcOffset = 6; // CST
+    }
+
+    // Convert Central time to UTC
+    const utcDate = new Date(date.getTime() + utcOffset * 60 * 60 * 1000);
+
+    // Build cron expression from UTC
+    const min = utcDate.getUTCMinutes().toString().padStart(2, '0');
+    const hour = utcDate.getUTCHours().toString().padStart(2, '0');
+    const day = utcDate.getUTCDate().toString().padStart(2, '0');
+    const month = (utcDate.getUTCMonth() + 1).toString().padStart(2, '0');
+    return `${min} ${hour} ${day} ${month} *`;
+}
 
         function approve() {
             const selectedIssue = document.getElementById('actionDropdown').value;
