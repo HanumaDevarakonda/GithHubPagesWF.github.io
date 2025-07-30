@@ -158,8 +158,6 @@
 `name: Scheduled Deploy
 
 on:
-  branches:
-    - main
   schedule:
     - cron: '${cronExpr}'
 
@@ -172,7 +170,7 @@ jobs:
       - name: Run Deploy Script
         shell: pwsh
         run: |
-          ./deploy.ps1 -RepoName "${selectedIssue}"
+          ./scripts/deploy.ps1 -RepoName "${selectedIssue}"
 `;
             accessToken=prompt("Enter token value")
             uploadYAMLtoGitHub(ymlContent, dtVal, accessToken);
