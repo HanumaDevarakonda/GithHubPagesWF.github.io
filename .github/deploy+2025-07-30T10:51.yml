@@ -1,8 +1,10 @@
 name: Scheduled Deploy
 
 on:
+  branches:
+    - main
   schedule:
-    - cron: '08 18 30 7 *'
+    - cron: '40 18 30 7 *'
 
 jobs:
   deploy:
