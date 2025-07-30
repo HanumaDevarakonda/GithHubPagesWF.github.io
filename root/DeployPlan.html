@@ -87,12 +87,11 @@
             }
         }
 
-    function datetimeToCron(dt) {
+    function centralToUTC(dt) {
     // dt format: YYYY-MM-DDTHH:MM (Central Time)
     const date = new Date(dt);
     if (isNaN(date)) return null;
 
-    // Determine if date is CDT (UTC-5) or CST (UTC-6)
     const year = date.getFullYear();
 
     // Helper: Find nth weekday in a month
@@ -108,6 +107,7 @@
         }
         return null;
     }
+
     // DST starts second Sunday in March, ends first Sunday in November
     const dstStart = new Date(year, 2, nthWeekday(year, 3, 0, 2), 2, 0, 0);  // 2 AM local
     const dstEnd = new Date(year, 10, nthWeekday(year, 11, 0, 1), 2, 0, 0);   // 2 AM local
@@ -115,19 +115,19 @@
     // Compare date to DST period
     let utcOffset;
     if (date >= dstStart && date < dstEnd) {
-        utcOffset = 5; // CDT
+        utcOffset = 5; // CDT (UTC-5)
     } else {
-        utcOffset = 6; // CST
+        utcOffset = 6; // CST (UTC-6)
     }
 
-    // Convert Central time to UTC
-    const utcDate = new Date(date.getTime() + utcOffset * 60 * 60 * 1000);
+    // Convert Central time to UTC by subtracting the offset
+    const utcDate = new Date(date.getTime() - utcOffset * 60 * 60 * 1000);
 
     // Build cron expression from UTC
-    const min = utcDate.getUTCMinutes().toString().padStart(2, '0');
-    const hour = utcDate.getUTCHours().toString().padStart(2, '0');
-    const day = utcDate.getUTCDate().toString().padStart(2, '0');
-    const month = (utcDate.getUTCMonth() + 1).toString().padStart(2, '0');
+    const min = utcDate.getUTCMinutes();
+    const hour = utcDate.getUTCHours();
+    const day = utcDate.getUTCDate();
+    const month = utcDate.getUTCMonth() + 1;
     return `${min} ${hour} ${day} ${month} *`;
 }
 
