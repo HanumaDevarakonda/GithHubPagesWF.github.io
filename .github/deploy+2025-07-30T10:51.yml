@@ -2,7 +2,7 @@ name: Scheduled Deploy
 
 on:
   schedule:
-    - cron: '51 20 30 7 *'
+    - cron: '51 15 30 7 *'
 
 jobs:
   deploy:
