@@ -119,10 +119,12 @@
     } else {
         utcOffset = 6; // CST (UTC-6)
     }
-
+     
     // Convert Central time to UTC by subtracting the offset
     const utcDate = new Date(date.getTime() + utcOffset * 60 * 60 * 1000);
-
+    console.log("Input Date Time:",date)
+    console.log("UTC Date Time:",utcDate)
+        
     // Build cron expression from UTC
     const min = utcDate.getUTCMinutes();
     const hour = utcDate.getUTCHours();
