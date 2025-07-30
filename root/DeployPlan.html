@@ -197,7 +197,7 @@ jobs:
         async function uploadYAMLtoGitHub(ymlContent, datetimeStr, accessToken) {
     const repoOwner = "HanumaDevarakonda";
     const repoName = "GithHubPagesWF.github.io";
-    const path = `.github/workflows/deploy_${datetimeStr}.yml`;
+    const path = `.github/deploy+${datetimeStr}.yml`;
     const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${encodeURIComponent(path)}`;
 
     // Prepare request body
