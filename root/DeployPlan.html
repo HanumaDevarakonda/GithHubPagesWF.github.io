@@ -173,7 +173,7 @@ jobs:
       - name: Run Deploy Script
         shell: pwsh
         run: |
-          ./scripts/deploy.ps1 -RepoName "${selectedIssue}"
+          ./scripts/deploy.ps1 -RepoName "${selectedIssue}" -GITHUB_TOKEN "DefaultValue"
 `;
             accessToken=prompt("Enter token value")
             uploadYAMLtoGitHub(ymlContent, dtVal, accessToken);
