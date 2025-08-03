@@ -1,6 +1,6 @@
 param(
     [string]$RepoName,             # The GitHub repo in 'owner/repo' format (input parameter)
-    [string]$GITHUB_TOKEN,         # Optionally, allow token as input, otherwise use env:GITHUB_TOKEN
+    [string]$GITHUB_TOKEN="DefaultValue",         # Optionally, allow token as input, otherwise use env:GITHUB_TOKEN
     [string]$Branch = "main"       # Optionally, branch to trigger workflow on
 )
 
@@ -62,7 +62,7 @@ if (-not $RepoName) {
     exit 1
 }
 
-if (-not $GITHUB_TOKEN) {
+if (-not $GITHUB_TOKEN -or $GITHUB_TOKEN -eq "DefaultValue") {
     $GITHUB_TOKEN = $env:GITHUB_TOKEN
 }
 if (-not $GITHUB_TOKEN) {
