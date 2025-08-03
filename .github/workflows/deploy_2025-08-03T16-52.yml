@@ -1,0 +1,19 @@
+name: Scheduled Deploy
+
+on:
+  //push:
+  //  branches:
+  //    - main
+  schedule:
+    - cron: '52 21 3 8 0'
+
+jobs:
+  deploy:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run Deploy Script
+        shell: pwsh
+        run: |
+          ./scripts/deploy.ps1 -RepoName "GitHubPages" -GITHUB_TOKEN "DefaultValue"
