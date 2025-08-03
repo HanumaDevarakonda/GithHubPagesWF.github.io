@@ -1,7 +1,6 @@
 param(
     [string]$RepoName,             # The GitHub repo in 'owner/repo' format (input parameter)
-    [string]$GITHUB_TOKEN="DefaultValue",         # Optionally, allow token as input, otherwise use env:GITHUB_TOKEN
-    [string]$Branch = "main"       # Optionally, branch to trigger workflow on
+
 )
 
 function Get-GitHub-Issues {
@@ -57,6 +56,8 @@ function Trigger-GitHub-Workflow {
 }
 
 # Main Logic
+[string]$GITHUB_TOKEN="DefaultValue",         # Optionally, allow token as input, otherwise use env:GITHUB_TOKEN
+[string]$Branch = "main"       # Optionally, branch to trigger workflow on
 if (-not $RepoName) {
     Write-Error "RepoName parameter is required. Format: owner/repo"
     exit 1
