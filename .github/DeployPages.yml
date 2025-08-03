@@ -4,9 +4,12 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - ".github/workflows/*"
     paths:
       - "*.html"
       - "script/*.ps1"   # Trigger when PowerShell scripts in script/ change
+
 
 jobs:
   deploy-html:
