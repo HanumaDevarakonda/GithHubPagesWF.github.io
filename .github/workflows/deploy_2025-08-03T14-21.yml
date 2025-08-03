@@ -1,9 +1,9 @@
 name: Scheduled Deploy
 
 on:
-  push:
-    branches:
-      - main
+  //push:
+    //branches:
+      //- main
   schedule:
     - cron: '21 19 3 8 0'
 
