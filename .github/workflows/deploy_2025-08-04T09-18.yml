@@ -1,5 +1,4 @@
 name: Scheduled Deploy
-
 on:
   schedule:
     - cron: '10 13 4 8 1'
