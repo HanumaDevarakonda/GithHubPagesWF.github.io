@@ -2,10 +2,10 @@ name: Deploy HTML files to GitHub Pages
 
 on:
   push:
+    paths-ignore:
+      - '.github/workflows/**'
     branches:
       - main
-    paths-ignore:
-      - ".github/workflows/*"
     paths:
       - "*.html"
       - "script/*.ps1"   # Trigger when PowerShell scripts in script/ change

@@ -55,7 +55,7 @@ function Trigger-GitHub-Workflow {
 }
 
 # Main Logic
-$GITHUB_TOKEN="DefaultValue",         # Optionally, allow token as input, otherwise use env:GITHUB_TOKEN
+$GITHUB_TOKEN="DefaultValue"         # Optionally, allow token as input, otherwise use env:GITHUB_TOKEN
 $Branch = "main"       # Optionally, branch to trigger workflow on
 if (-not $RepoName) {
     Write-Error "RepoName parameter is required. Format: owner/repo"

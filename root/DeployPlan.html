@@ -114,6 +114,8 @@
 
     // Compare date to DST period
     let utcOffset;
+    console.log("DST Start:", dstStart);
+    console.log("DST End:", dstEnd);
     if (date >= dstStart && date < dstEnd) {
         utcOffset = 5; // CDT (UTC-5)
     } else {
@@ -158,7 +160,6 @@
 `name: Scheduled Deploy
 
 on:
-  workflow_dispatch:
   schedule:
     - cron: '${cronExpr}'
 
