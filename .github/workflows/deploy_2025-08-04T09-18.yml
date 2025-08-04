@@ -1,9 +1,8 @@
 name: Scheduled Deploy
 
 on:
-  workflow_dispatch:
   schedule:
-    - cron: '18 14 4 8 1'
+    - cron: '58 14 4 8 1'
 
 jobs:
   deploy:
