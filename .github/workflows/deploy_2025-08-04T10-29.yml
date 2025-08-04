@@ -1,5 +1,6 @@
 name: Scheduled Deploy
 on:
+  workflow_dispatch:
   schedule:
     - cron: '55 16 4 8 1'
 
