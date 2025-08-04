@@ -1,0 +1,17 @@
+name: Scheduled Deploy
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '18 14 4 8 1'
+
+jobs:
+  deploy:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run Deploy Script
+        shell: pwsh
+        run: |
+          ./scripts/deploy.ps1 -RepoName "GitHubPages"
