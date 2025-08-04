@@ -1,6 +1,7 @@
 # Test Commit
 param(
-    [string]$RepoName             # The GitHub repo in 'owner/repo' format (input parameter)
+    [string]$RepoName,             # The GitHub repo in 'owner/repo' format (input parameter)
+    [string]$GITHUB_TOKEN
 )
 
 function Get-GitHub-Issues {
@@ -54,9 +55,9 @@ function Trigger-GitHub-Workflow {
     } | ConvertTo-Json
     Invoke-RestMethod -Uri $url -Headers $headers -Method POST -Body $body
 }
-
+Write-Host "Starting Deploy.ps1"
 # Main Logic
-$GITHUB_TOKEN="DefaultValue"         # Optionally, allow token as input, otherwise use env:GITHUB_TOKEN
+# $GITHUB_TOKEN=$null         # Optionally, allow token as input, otherwise use env:GITHUB_TOKEN
 $Branch = "main"       # Optionally, branch to trigger workflow on
 if (-not $RepoName) {
     Write-Error "RepoName parameter is required. Format: owner/repo"
@@ -66,10 +67,10 @@ if (-not $RepoName) {
 if (-not $GITHUB_TOKEN -or $GITHUB_TOKEN -eq "DefaultValue") {
     $GITHUB_TOKEN = $env:GITHUB_TOKEN
 }
-if (-not $GITHUB_TOKEN) {
-    Write-Error "GitHub token not provided. Pass via -GITHUB_TOKEN or set GITHUB_TOKEN environment variable."
-    exit 1
-}
+# if (-not $GITHUB_TOKEN) {
+#     Write-Error "GitHub token not provided. Pass via -GITHUB_TOKEN or set GITHUB_TOKEN environment variable."
+#     exit 1
+# }
 
 Write-Host "Processing repo: $RepoName"
 $issues = Get-GitHub-Issues -Repo $RepoName -Token $GITHUB_TOKEN

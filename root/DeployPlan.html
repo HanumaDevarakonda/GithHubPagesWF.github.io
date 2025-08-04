@@ -170,9 +170,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Run Deploy Script
+        env:
+          GH_TOKEN: ${{ secrets.GH_Token }}
         shell: pwsh
         run: |
-          ./scripts/deploy.ps1 -RepoName "${selectedIssue}"
+          ./scripts/deploy.ps1 -RepoName "${selectedIssue}" -GITHUB_TOKEN "\${{ secrets.GH_Token }}"
 `;
             accessToken=prompt("Enter token value")
             uploadYAMLtoGitHub(ymlContent, dtVal, accessToken);
